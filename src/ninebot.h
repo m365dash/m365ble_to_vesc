@@ -89,11 +89,11 @@ typedef struct {
 	uint8_t speed;
 	uint8_t faultcode;
     uint8_t CheckSum[2];
-} ToDash;
+} DashPack;
 
 
 void addCRC(uint8_t * message, uint8_t size);
-extern ToDash m365_to_display;
+extern DashPack dash_pack;
 
 uint16_t ninebot_parse(uint8_t data, NinebotPack *message);
 
