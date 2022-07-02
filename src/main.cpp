@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+#include <VescUart.h>
 // #include <WatchDog.h>
 
 #include "ninebot.c"
@@ -8,11 +9,13 @@
 // M365 BLE serial: RX = digital pin 8, TX = digital pin 9
 SoftwareSerial serialBle(8, 9);
 
-int batteryPin = A0;
+int buttonPin = A0;
 int pwrPin = A1;
+int lightPin = A2;
 
 // VESC serial: RX = digital pin 10, TX = digital pin 11
 SoftwareSerial serialVesc(10, 11);
+VescUart vescCntrl;
 
 NinebotPack frame;
 
@@ -25,33 +28,38 @@ void setup() {
     Serial.begin(9600);
 
     while (!Serial) {
-        ; // wait for serial port to connect. Needed for native USB port only
-    }
+          ; // wait for serial port to connect. Needed for native USB port only
+      }
+
+    Serial.println("Hello USB!");
 
     serialBle.begin(115200); // M365 BLE on 115200 BAUD RATE
-    serialVesc.begin(19200); // VESC on 19200 BAUD RATE
+    serialVesc.begin(115200); // VESC on 19200 BAUD RATE
 
-    pinMode(batteryPin, OUTPUT);
+    Serial.println("waiting for vesc");
+    while (!serialVesc) { ; }
+
+    Serial.println("Connected VESC");
+
+    vescCntrl.setSerialPort(&serialVesc);
+    // vescCntrl.setDebugPort(&Serial); It will cause issues with the Serial output
+
+    pinMode(buttonPin, INPUT);
     pinMode(pwrPin, OUTPUT);
+    pinMode(lightPin, OUTPUT);
+
+    delay(1000);
 }
 
 bool turned_on;
 
 void loop(void) {
-    digitalWrite(batteryPin, HIGH);   
     digitalWrite(pwrPin, HIGH);
+    digitalWrite(lightPin, HIGH); // Rear light is always on
 
     // M365 BLE to VESC
 
     serialBle.listen();
-
-    
-
-    // int valueAnalogPin = analogRead(pwrPin);
-    // valueAnalogPin = analogRead(pwrPin);
-    // if (valueAnalogPin > 0) {
-    //      Serial.println((int)valueAnalogPin);
-    // }
     
     while (serialBle.available() > 0) {
         uint8_t data = (uint8_t)serialBle.read();
@@ -86,9 +94,6 @@ void loop(void) {
 					adc1 = frame.payload[1];
 					adc2 = frame.payload[2];
                     Serial.println("adc " + String(adc1, HEX) + " adc2 " + String(adc2, HEX));
-
-					// VescToSTM_timeout_reset();
-					// app_check_timer();
 				    break;
                 default:
                     // todo: implement cmd handling for app connection, not very important, but some might would like to use.
@@ -102,6 +107,5 @@ void loop(void) {
     delay(1);
     // VESC data to M365 BLE
 
-    
 
 }
